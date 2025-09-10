@@ -1,2 +1,7 @@
-# UnderWater-Acoustic-Detection
-Main project module
+Recurrent Neural Network–Based Analysis of Underwater Acoustic Data for Underwater Surveillance
+
+PROBLEM STATEMENT:
+To detect anomalies (in the background of ambient noise) in an audio file (.wav format), extract the duration of anomalies (presence of objects), extract features of the object and classify the object into different classes.
+
+ABSTRACT:
+Detection and classification of underwater objects from acoustic data presents a significant challenge due to the complex nature of the underwater environment, characterized by varying ambient noise levels and the subtle signatures of target objects. This project addresses this challenge by proposing an artificial intelligence (AI) solution for the robust detection and classification of objects within underwater acoustic data, specifically in .wav file format. The core objectives include: (1) developing an anomaly detection module capable of identifying object presences against a backdrop of ambient noise; (2) precisely extracting the temporal duration of these anomalies, indicating the presence of objects; (3) computing salient acoustic features from the extracted object signals; and (4) implementing a classification system to categorize detected objects into predefined classes. This AI-driven approach aims to enhance the accuracy and efficiency of underwater object analysis, offering valuable insights for applications such as marine conservation, underwater exploration, and naval security.
