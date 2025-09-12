@@ -1,0 +1,35 @@
+data:
+  sample_rate: 32000
+  window_size: 2048
+  hop_length: 512
+  n_mels: 128
+  n_mfcc: 13
+  duration: 2.0  # seconds per segment
+
+# Model Configuration
+model:
+  cnn_lstm:
+    cnn_filters: [32, 64, 128, 256]
+    lstm_units: 256
+    dropout: 0.3
+    num_classes: 15  # ships + marine life + anomaly
+  
+  autoencoder:
+    encoder_dims: [512, 256, 128, 64]
+    latent_dim: 32
+    dropout: 0.2
+
+# Training Configuration
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 0.001
+  weight_decay: 1e-5
+  patience: 15
+
+# Real-time Configuration
+realtime:
+  buffer_size: 4096
+  threshold_anomaly: 0.7
+  threshold_confidence: 0.8
+  alert_cooldown: 5  # seconds
