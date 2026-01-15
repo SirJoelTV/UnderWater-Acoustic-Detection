@@ -1,0 +1,11 @@
+# Data
+data/
+*.wav
+
+# Models
+*.pth
+
+# Python cache
+__pycache__/
+*.pyc
+
