@@ -1,11 +1,9 @@
 import numpy as np
-
-TARGET_SR = 16000
-WINDOW_SECONDS = 1.0
-OVERLAP = 0.5
+from anomaly_detection.config import TARGET_SR, WINDOW_SECONDS, OVERLAP
 
 WINDOW_SIZE = int(TARGET_SR * WINDOW_SECONDS)
 HOP_SIZE = int(WINDOW_SIZE * (1 - OVERLAP))
+
 
 
 def segment_audio(audio):
