@@ -1,16 +1,10 @@
-print("### TEST_LOAD.PY IS RUNNING ###")
-
 from anomaly_detection.preprocessing.load_audio import load_dataset
-
-print("Starting data loading test...")
+from anomaly_detection.preprocessing.segment import segment_dataset
 
 marine, ships = load_dataset("data")
 
-print("Marine samples:", len(marine))
-print("Ship samples:", len(ships))
+marine_segments = segment_dataset(marine)
+ship_segments = segment_dataset(ships)
 
-if len(marine) > 0:
-    print("Example marine length:", len(marine[0]))
-
-if len(ships) > 0:
-    print("Example ship length:", len(ships[0]))
+print("Marine segments shape:", marine_segments.shape)
+print("Ship segments shape:", ship_segments.shape)
