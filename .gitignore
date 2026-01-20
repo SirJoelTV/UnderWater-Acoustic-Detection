@@ -1,8 +1,8 @@
 # Data
 data/
 *.wav
-*.npz
 
+*.npz
 # Models
 *.pth
 *.pkl
@@ -10,6 +10,9 @@ data/
 # Python cache
 __pycache__/
 *.pyc
+# model out
+autoencoder.pkl
+scaler.pkl
 
 # Test files
 testfiles/
