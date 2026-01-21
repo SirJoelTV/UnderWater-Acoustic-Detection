@@ -6,14 +6,28 @@ import joblib
 from anomaly_detection.preprocessing.load_audio import load_dataset
 from anomaly_detection.preprocessing.segment import segment_dataset
 from anomaly_detection.features.mfcc import mfcc_dataset
+from anomaly_detection.preprocessing.energy import select_low_energy_segments
+
 
 
 def train():
     # Load data
-    marine, _ = load_dataset("data")
+    marine, ships = load_dataset("data")
 
+    # Segment marine audio
     marine_segments = segment_dataset(marine)
-    marine_features = mfcc_dataset(marine_segments)
+
+    # Select low-energy (ambient) segments
+    ambient_segments = select_low_energy_segments(
+    marine_segments,
+    percentile=30
+)
+
+    print(f"[INFO] Ambient segments selected: {len(ambient_segments)}")
+
+    # Extract MFCC features from ambient-only data
+    marine_features = mfcc_dataset(ambient_segments)
+
 
     # Scale features
     scaler = StandardScaler()
