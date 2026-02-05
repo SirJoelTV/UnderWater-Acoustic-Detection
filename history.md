@@ -75,3 +75,28 @@ Replace MFCC with log-mel spectrogram energy features.
 Use distance-based anomaly models (Isolation Forest / One-Class SVM).
 
 Preserve energy distribution instead of compressing it.
+
+****
+### Segment Duration Experiment (MFCC + Autoencoder)
+
+We evaluated the impact of segment duration on anomaly detection performance
+by modifying WINDOW_SECONDS in the segmentation module.
+
+Tested segment durations:
+- 1 second (baseline)
+- 3 seconds
+- 5 seconds
+
+Observations:
+- Increasing segment duration reduced variance in reconstruction error.
+- Longer segments provided better temporal context for stationary sounds.
+- However, MFCC features still showed overlap between ambient noise and ship noise.
+
+Inference:
+Segment duration alone does not resolve the anomaly detection failure.
+Feature representation remains the primary bottleneck.
+
+Decision:
+Proceed to log-mel energy features while keeping longer segments.
+
+

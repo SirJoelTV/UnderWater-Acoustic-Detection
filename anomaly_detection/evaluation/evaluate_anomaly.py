@@ -6,6 +6,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 from anomaly_detection.preprocessing.load_audio import load_dataset
 from anomaly_detection.preprocessing.segment import segment_dataset
 from anomaly_detection.features.mfcc import mfcc_dataset
+from anomaly_detection.features.logmel import logmel_dataset
 
 
 def reconstruction_error(model, X):
@@ -22,8 +23,8 @@ def main():
     marine, ships = load_dataset("data")
 
     # Feature extraction
-    marine_features = mfcc_dataset(segment_dataset(marine))
-    ship_features = mfcc_dataset(segment_dataset(ships))
+    marine_features = logmel_dataset(segment_dataset(marine))
+    ship_features = logmel_dataset(segment_dataset(ships))
 
     marine_features = scaler.transform(marine_features)
     ship_features = scaler.transform(ship_features)
