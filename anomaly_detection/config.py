@@ -2,7 +2,7 @@
 TARGET_SR = 16000
 
 # Segmentation settings
-WINDOW_SECONDS = 1.0
+WINDOW_SECONDS = 3.0
 OVERLAP = 0.5
 
 # MFCC settings
