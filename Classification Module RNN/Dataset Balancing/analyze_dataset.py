@@ -6,7 +6,7 @@ import json
 from collections import defaultdict
 import librosa
 import numpy as np
-import config
+from Model import config
 
 def analyze_dataset():
     """Analyze dataset for common issues."""
