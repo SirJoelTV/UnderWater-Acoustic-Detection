@@ -1,40 +1,78 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 import json
 
 import config
 from model import EnhancedBiLSTM
-from preprocessing import UnderwaterDataset
+from preprocessing import create_stratified_split, save_global_statistics
 
 def train():
     device = config.get_device()
     
-    # 1. Prepare Data
-    full_ds = UnderwaterDataset(config.DATA_DIR, training=True)
+    # 1. Prepare Data with Stratified Split
+    print("Creating stratified train/val split...")
+    train_ds, val_ds, classes = create_stratified_split(
+        config.DATA_DIR, 
+        test_size=0.2,
+        categories=['ships', 'marine_life']
+    )
     
     # Save classes for inference later
     with open(config.CLASSES_PATH, 'w') as f:
-        json.dump(list(full_ds.encoder.classes_), f)
+        json.dump(list(classes), f)
     print(f"Saved class labels to {config.CLASSES_PATH}")
 
-    train_len = int(0.8 * len(full_ds))
-    val_len = len(full_ds) - train_len
-    train_ds, val_ds = random_split(full_ds, [train_len, val_len])
+    train_loader = DataLoader(
+        train_ds, 
+        batch_size=config.BATCH_SIZE, 
+        shuffle=True, 
+        num_workers=2,
+        pin_memory=True
+    )
+    val_loader = DataLoader(
+        val_ds, 
+        batch_size=config.BATCH_SIZE, 
+        shuffle=False,
+        num_workers=2,
+        pin_memory=True
+    )
 
-    train_loader = DataLoader(train_ds, batch_size=config.BATCH_SIZE, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_ds, batch_size=config.BATCH_SIZE, shuffle=False)
-
-    # 2. Setup Model
-    model = EnhancedBiLSTM(num_classes=len(full_ds.encoder.classes_)).to(device)
-    criterion = nn.CrossEntropyLoss()
+    # 2. Setup Model with Class Weights to Handle Category Imbalance
+    model = EnhancedBiLSTM(num_classes=len(classes)).to(device)
+    
+    # Compute class weights (inverse of class frequency)
+    # This balances the 10 marine_life vs 4 ship categories
+    train_targets = torch.tensor(train_ds.encoded_labels, dtype=torch.long)
+    unique, counts = torch.unique(train_targets, return_counts=True)
+    class_weights = torch.zeros(len(classes))
+    total_samples = counts.sum().float()
+    for idx, count in zip(unique, counts):
+        class_weights[idx] = total_samples / (len(classes) * count.float())
+    class_weights = class_weights.to(device)
+    
+    print(f"Class weights: {class_weights.cpu().numpy()}")
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+    # Use CosineAnnealingLR with warmup for better convergence
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, 
+        T_max=config.EPOCHS, 
+        eta_min=1e-5
+    )
 
     # 3. Training Loop
     best_acc = 0.0
+    best_loss = float('inf')
+    patience_counter = 0
+    
     for epoch in range(config.EPOCHS):
+        # Warmup learning rate for first few epochs
+        if epoch < config.WARMUP_EPOCHS:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = config.LEARNING_RATE * (epoch + 1) / config.WARMUP_EPOCHS
+        
         model.train()
         total_loss = 0
         correct = 0
@@ -46,22 +84,45 @@ def train():
             outputs = model(X)
             loss = criterion(outputs, y)
             loss.backward()
+            
+            # Gradient clipping to prevent exploding gradients
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            
             optimizer.step()
 
             total_loss += loss.item()
             correct += (outputs.argmax(1) == y).sum().item()
             total += y.size(0)
 
+        # Step scheduler after warmup
+        if epoch >= config.WARMUP_EPOCHS:
+            scheduler.step()
+        
         # Validation
         val_acc, val_loss = evaluate(model, val_loader, criterion, device)
-        scheduler.step(val_loss)
         
-        print(f"Epoch {epoch+1}: Train Acc: {100*correct/total:.1f}% | Val Acc: {val_acc:.1f}% | Val Loss: {val_loss:.4f}")
+        train_acc = 100 * correct / total
+        print(f"Epoch {epoch+1}/{config.EPOCHS}: Train Loss: {total_loss/len(train_loader):.4f} | Train Acc: {train_acc:.1f}% | Val Acc: {val_acc:.1f}% | Val Loss: {val_loss:.4f}")
 
+        # Save on best validation accuracy
         if val_acc > best_acc:
             best_acc = val_acc
+            best_loss = val_loss
+            patience_counter = 0
             torch.save(model.state_dict(), config.MODEL_PATH)
-            print("--> Model Saved")
+            print(f"  --> Model Saved (Best Val Acc: {val_acc:.1f}%)")
+        else:
+            patience_counter += 1
+            if patience_counter % 3 == 0:
+                print(f"  --> No improvement for {patience_counter} epochs")
+            
+        if patience_counter >= config.PATIENCE:
+            print(f"\nEarly stopping triggered. Best Val Acc: {best_acc:.1f}%")
+            break
+    
+    # Save global statistics for inference
+    save_global_statistics(config.GLOBAL_STATS_PATH)
+    print(f"\nTraining completed. Best validation accuracy: {best_acc:.1f}%")
 
 def evaluate(model, loader, criterion, device):
     model.eval()
