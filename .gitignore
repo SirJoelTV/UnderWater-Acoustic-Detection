@@ -2,13 +2,20 @@
 data/
 *.wav
 
-
-# Models
-*.pth
+#.npz file
+*.npz
 
 # Python cache
 __pycache__/
 *.pyc
 
-
+#testfiles
 testfiles/
+
+#Supporting files
+Screenshots/
+scraper.py
+
+
+#Environment
+.MainProjectEnv/
