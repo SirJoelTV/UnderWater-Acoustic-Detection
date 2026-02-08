@@ -10,9 +10,10 @@ data/
 # Python cache
 __pycache__/
 *.pyc
-# model out
-autoencoder.pkl
-scaler.pkl
+# model output
+*.pkl
+
+
 
 # Test files
 testfiles/
