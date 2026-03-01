@@ -151,9 +151,13 @@ def evaluate_anomaly_detection(threshold_percentile=90, ambient_percentile=10, a
         anomaly_error = anomaly_error[idx_anomaly]
         print(f"[INFO] Balanced: {min_size} samples each")
     
-    # Threshold from ambient data
-    threshold = np.percentile(ambient_error, threshold_percentile)
-    print(f"\n[INFO] Threshold ({threshold_percentile}th percentile of ambient): {threshold:.6f}")
+    # Threshold from training data
+    try:
+        threshold = joblib.load("anomaly_threshold.pkl")
+        print(f"\n[INFO] Using saved training threshold: {threshold:.6f}")
+    except FileNotFoundError:
+        threshold = np.percentile(ambient_error, threshold_percentile)
+        print(f"\n[INFO] Fallback Threshold ({threshold_percentile}th percentile of test ambient): {threshold:.6f}")
     
     # Create labels and predictions
     y_true = np.concatenate([

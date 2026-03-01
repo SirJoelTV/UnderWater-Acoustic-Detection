@@ -88,12 +88,48 @@ def train_on_ambient(
     all_segments = np.vstack([marine_segments, ship_segments])
     print(f"[INFO] Total segments: {len(all_segments)}")
     
+    # Load external ambient recordings from data/ambient/
+    ambient_dir = os.path.join("data", "ambient")
+    external_ambient = []
+    if os.path.exists(ambient_dir):
+        import librosa
+        from anomaly_detection.config import TARGET_SR, WINDOW_SECONDS, OVERLAP
+        
+        ambient_files = [f for f in os.listdir(ambient_dir) if f.endswith('.wav')]
+        print(f"\n[INFO] Loading {len(ambient_files)} external ambient file(s)...")
+        
+        for f in ambient_files:
+            filepath = os.path.join(ambient_dir, f)
+            audio, _ = librosa.load(filepath, sr=TARGET_SR, mono=True)
+            
+            # Normalize
+            if np.max(np.abs(audio)) > 0:
+                audio = audio / np.max(np.abs(audio))
+            
+            # Segment
+            window_size = int(TARGET_SR * WINDOW_SECONDS)
+            hop_size = int(window_size * (1 - OVERLAP))
+            for start in range(0, len(audio) - window_size + 1, hop_size):
+                external_ambient.append(audio[start:start + window_size])
+            
+            print(f"  - {f}: {len(audio)/TARGET_SR:.1f}s")
+        
+        if external_ambient:
+            external_ambient = np.array(external_ambient)
+            print(f"[INFO] External ambient segments: {len(external_ambient)}")
+    
+    
     # Select ONLY the quietest segments as ambient
     print(f"\n[INFO] Selecting ambient noise (bottom {ambient_percentile}% energy)...")
     ambient_segments = select_ambient_segments(all_segments, percentile=ambient_percentile)
     
     if len(ambient_segments) < 50:
         print("[WARNING] Very few ambient segments! Consider increasing percentile.")
+    
+    # Combine with external ambient recordings
+    if external_ambient is not None and len(external_ambient) > 0:
+        ambient_segments = np.vstack([ambient_segments, external_ambient])
+        print(f"[INFO] Combined ambient segments: {len(ambient_segments)}")
     
     # Extract features from ambient only
     print("\n[INFO] Extracting features from ambient segments...")
@@ -128,10 +164,17 @@ def train_on_ambient(
     X_pred = autoencoder.predict(X)
     train_error = np.mean((X - X_pred) ** 2, axis=1)
     
+    # Compute anomaly threshold from ambient data
+    # Using mean + 3*std is more robust for unseen ambient recordings
+    ambient_mean = np.mean(train_error)
+    ambient_std = np.std(train_error)
+    anomaly_threshold = ambient_mean + 3 * ambient_std
+    
     print(f"\n[INFO] Training completed!")
     print(f"[INFO] Final loss: {autoencoder.loss_:.6f}")
     print(f"[INFO] Ambient reconstruction error:")
-    print(f"       Mean: {np.mean(train_error):.4f}, Std: {np.std(train_error):.4f}")
+    print(f"       Mean: {ambient_mean:.4f}, Std: {ambient_std:.4f}")
+    print(f"[INFO] Anomaly threshold (mean + 3*std): {anomaly_threshold:.6f}")
     
     # Test on non-ambient data to verify
     print("\n[INFO] Verifying on non-ambient segments...")
@@ -155,12 +198,14 @@ def train_on_ambient(
         print(f"\n[INFO] Separation ratio: {separation:.2f}x")
         print(f"       (Higher = better anomaly detection)")
     
-    # Save models
+    # Save models and threshold
     autoencoder_path = os.path.join(save_path, "autoencoder.pkl")
     scaler_path = os.path.join(save_path, "scaler.pkl")
+    threshold_path = os.path.join(save_path, "anomaly_threshold.pkl")
     
     joblib.dump(autoencoder, autoencoder_path)
     joblib.dump(scaler, scaler_path)
+    joblib.dump(anomaly_threshold, threshold_path)
     
     print(f"\n[INFO] Models saved:")
     print(f"  - {autoencoder_path}")
