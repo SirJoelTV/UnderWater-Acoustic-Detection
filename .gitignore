@@ -2,20 +2,26 @@
 data/
 *.wav
 
-#.npz file
 *.npz
+# Models
+*.pth
+*.pkl
 
 # Python cache
 __pycache__/
 *.pyc
+# model output
+*.pkl
 
-#testfiles
+
+
+# Test files
 testfiles/
 
-#Supporting files and folders
+# Supporting files and folders
 Screenshots/
 scraper.py
 
-
-#Environment
+# Environment
 .MainProjectEnv/
+.vscode/
