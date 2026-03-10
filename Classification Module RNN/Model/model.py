@@ -1,32 +1,66 @@
-import torch
 import torch.nn as nn
 
-class EnhancedBiLSTM(nn.Module):
-    def __init__(self, num_classes, input_size=64, hidden_size=128, num_layers=2):
-        super().__init__()
-        self.lstm = nn.LSTM(
-            input_size, hidden_size, num_layers,
-            batch_first=True, dropout=0.3, bidirectional=True  # Reduced from 0.5
-        )
-        self.attn = nn.Linear(2 * hidden_size, 1)
-        self.fc1 = nn.Linear(2 * hidden_size, 128)
-        self.bn1 = nn.BatchNorm1d(128)  # Add batch norm
-        self.fc2 = nn.Linear(128, 64)
-        self.bn2 = nn.BatchNorm1d(64)  # Add batch norm
-        self.fc3 = nn.Linear(64, num_classes)
-        self.dropout = nn.Dropout(0.4)  # Reduced from 0.6
-        self.relu = nn.ReLU()
 
-    def attention(self, x):
-        # x shape: [batch, seq_len, hidden_dim*2]
-        weights = torch.softmax(self.attn(x), dim=1)
-        return torch.sum(x * weights, dim=1)
+class SimpleCNN(nn.Module):
+    """
+    Simple CNN for classifying underwater audio mel spectrograms.
+
+    Input shape:  (batch, 1, N_MELS, time_steps)
+                   batch = number of 3s audio chunks per batch
+                   1     = single channel (grayscale image)
+                   N_MELS      = 64  (frequency axis)
+                   time_steps  = 3*32000 // 512 + 1 = 188
+
+    Output shape: (batch, num_classes)
+
+    Architecture:
+        Block 1: Conv → ReLU → MaxPool → Dropout   (finds basic patterns)
+        Block 2: Conv → ReLU → MaxPool → Dropout   (finds combinations)
+        Block 3: Conv → ReLU → MaxPool → Dropout   (finds class-level patterns)
+        Flatten
+        FC → ReLU → Dropout
+        FC → ReLU → Dropout
+        Output (num_classes)
+    """
+
+    def __init__(self, num_classes, n_mels=64, time_steps=188):
+        super().__init__()
+
+        self.features = nn.Sequential(
+            # Block 1
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Dropout2d(0.2),
+
+            # Block 2
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Dropout2d(0.2),
+
+            # Block 3
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Dropout2d(0.2),
+        )
+
+        # After 3 x MaxPool2d(2), each dimension is divided by 8
+        flat_size = 64 * (n_mels // 8) * (time_steps // 8)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(flat_size, 256),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(128, num_classes)
+        )
 
     def forward(self, x):
-        x, _ = self.lstm(x)
-        x = self.attention(x)
-        x = self.bn1(self.fc1(x))
-        x = self.dropout(self.relu(x))
-        x = self.bn2(self.fc2(x))
-        x = self.dropout(self.relu(x))
-        return self.fc3(x)
+        x = self.features(x)
+        x = x.flatten(start_dim=1)
+        x = self.classifier(x)
+        return x

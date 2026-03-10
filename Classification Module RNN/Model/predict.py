@@ -1,142 +1,71 @@
-import torch
 import json
-import os
-import librosa
 import numpy as np
+import torch
+
 import config
-from model import EnhancedBiLSTM
-from preprocessing import process_audio_to_spectrogram, load_global_statistics
+from model import SimpleCNN
+from preprocessing import load_audio, split_into_chunks, audio_to_melspectrogram
 
-def predict_single_file():
-    device = config.get_device()
-    
-    # Load global normalization statistics
-    load_global_statistics(config.GLOBAL_STATS_PATH)
 
-    # 1. Load Classes
-    if not os.path.exists(config.CLASSES_PATH):
-        print("Error: classes.json not found. Run train.py first.")
-        return
-    with open(config.CLASSES_PATH, 'r') as f:
-        labels = json.load(f)
+def get_time_steps():
+    return (config.SAMPLE_RATE * config.CHUNK_DURATION) // config.HOP_LENGTH + 1
 
-    # 2. Load Model
-    model = EnhancedBiLSTM(num_classes=len(labels)).to(device)
-    try:
-        model.load_state_dict(torch.load(config.MODEL_PATH, map_location=device))
-    except FileNotFoundError:
-        print("Error: Model file not found. Run train.py first.")
-        return
-    model.eval()
 
-    # 3. Inference Loop
-    print("\n--- Audio Classifier ---")
-    while True:
-        path = input("Enter audio file path (or 'exit'): ").strip().strip('"') # Strip quotes if dragged in
-        if path.lower() == 'exit': break
-        
-        if not os.path.exists(path):
-            print("File not found.")
-            continue
+def predict(audio_path):
+    """
+    Predict the class of an audio file.
 
-        # Load and Process Audio
-        try:
-            audio, sr = librosa.load(path, sr=config.SAMPLE_RATE)
-        except Exception as e:
-            print(f"Error loading audio: {e}")
-            continue
-        
-        # Convert to spectrogram
-        mel_db = process_audio_to_spectrogram(audio, sr)
-        features = torch.tensor(mel_db.T).float()  # [Time, Freq]
-        features = features.unsqueeze(0).to(device) # Add batch dim
-        
-        with torch.no_grad():
-            output = model(features)
-            probs = torch.softmax(output, dim=1)
-            conf, idx = torch.max(probs, 1)
-            
-        result_label = labels[idx.item()]
-        confidence = conf.item()
-        
-        # Show top 3 predictions
-        top3_probs, top3_indices = torch.topk(probs, min(3, len(labels)), dim=1)
-        print(f"\nResult: {result_label} (Confidence: {confidence:.2%})")
-        print("Top predictions:")
-        for i, (prob, label_idx) in enumerate(zip(top3_probs[0], top3_indices[0])):
-            print(f"  {i+1}. {labels[label_idx.item()]} - {prob.item():.2%}")
-        
-        if confidence < 0.5:
-            print("⚠️  Low confidence - results may be unreliable!")
-        print()
+    For long files (e.g. 3-minute ship recording):
+        - Split into 3s chunks
+        - Predict each chunk
+        - Take the majority vote across all chunks
+        → Much more reliable than predicting from one 3s snippet
 
-def predict_folder(folder_path):
-    """Batch predict all WAV files in a folder."""
-    device = config.get_device()
-    
-    # Load global normalization statistics
-    load_global_statistics(config.GLOBAL_STATS_PATH)
-
+    For short files (e.g. 1s dolphin click):
+        - Pad to 3s
+        - Single prediction
+    """
     # Load model and classes
-    if not os.path.exists(config.CLASSES_PATH):
-        print("Error: classes.json not found. Run train.py first.")
-        return
-    with open(config.CLASSES_PATH, 'r') as f:
-        labels = json.load(f)
+    with open(config.CLASSES_PATH) as f:
+        classes = json.load(f)
 
-    model = EnhancedBiLSTM(num_classes=len(labels)).to(device)
-    try:
-        model.load_state_dict(torch.load(config.MODEL_PATH, map_location=device))
-    except FileNotFoundError:
-        print("Error: Model file not found. Run train.py first.")
-        return
+    time_steps = get_time_steps()
+    model      = SimpleCNN(num_classes=len(classes), n_mels=config.N_MELS, time_steps=time_steps)
+    model.load_state_dict(torch.load(config.MODEL_PATH, map_location=config.DEVICE))
+    model.to(config.DEVICE)
     model.eval()
 
-    print(f"\n--- Batch Prediction Mode ---")
-    print(f"Processing files in: {folder_path}\n")
-    
-    wav_files = [f for f in os.listdir(folder_path) if f.endswith('.wav')]
-    
-    if not wav_files:
-        print("No .wav files found!")
-        return
-    
-    results = []
-    for filename in wav_files:
-        filepath = os.path.join(folder_path, filename)
-        
-        try:
-            audio, sr = librosa.load(filepath, sr=config.SAMPLE_RATE)
-        except Exception as e:
-            print(f"❌ {filename}: Error loading ({e})")
-            continue
-        
-        mel_db = process_audio_to_spectrogram(audio, sr)
-        features = torch.tensor(mel_db.T).float().unsqueeze(0).to(device)
-        
-        with torch.no_grad():
-            output = model(features)
-            probs = torch.softmax(output, dim=1)
-            conf, idx = torch.max(probs, 1)
-        
-        result_label = labels[idx.item()]
-        confidence = conf.item()
-        results.append((filename, result_label, confidence))
-        
-        status = "✓" if confidence > 0.7 else "⚠"
-        print(f"{status} {filename}: {result_label} ({confidence:.1%})")
-    
-    print(f"\n--- Summary ---")
-    print(f"Processed: {len(results)} files")
-    high_conf = sum(1 for _, _, c in results if c > 0.7)
-    print(f"High confidence (>70%): {high_conf}/{len(results)}")
+    # Load and chunk audio
+    audio, sr = load_audio(audio_path)
+    chunk_len  = config.SAMPLE_RATE * config.CHUNK_DURATION
+    chunks     = split_into_chunks(audio, chunk_len)
+    print(f"Audio split into {len(chunks)} chunk(s) of {config.CHUNK_DURATION}s each")
 
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "batch":
-        if len(sys.argv) > 2:
-            predict_folder(sys.argv[2])
-        else:
-            print("Usage: python predict.py batch <folder_path>")
-    else:
-        predict_single_file()
+    # Predict each chunk
+    all_probs = []
+    with torch.no_grad():
+        for chunk in chunks:
+            mel  = audio_to_melspectrogram(chunk, config.SAMPLE_RATE)
+            X    = torch.tensor(mel, dtype=torch.float32).unsqueeze(0).to(config.DEVICE)
+            out  = model(X)
+            probs = torch.softmax(out, dim=1)[0].cpu().numpy()
+            all_probs.append(probs)
+
+    # Average probabilities across all chunks (soft voting)
+    avg_probs     = np.mean(all_probs, axis=0)
+    predicted_idx = np.argmax(avg_probs)
+
+    predicted_class = classes[predicted_idx]
+    confidence      = avg_probs[predicted_idx] * 100
+
+    print(f"\nPrediction : {predicted_class}")
+    print(f"Confidence : {confidence:.1f}%")
+    print(f"\nAll class probabilities:")
+    for cls, prob in sorted(zip(classes, avg_probs), key=lambda x: -x[1]):
+        bar = "█" * int(prob * 40)
+        print(f"  {cls:<45}: {prob*100:>5.1f}%  {bar}")
+
+
+# Ask user for audio path
+path = input("Enter path to audio file: ").strip().strip('"')
+predict(path)

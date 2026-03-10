@@ -1,6 +1,8 @@
-# Data
-data/
+#Data
+Dataset/
 *.wav
+
+
 
 #.npz file
 *.npz
@@ -9,13 +11,20 @@ data/
 __pycache__/
 *.pyc
 
+__init__.py
+
 #testfiles
 testfiles/
 
 #Supporting files and folders
 Screenshots/
 scraper.py
+*.png
 
+# Environment
+.MainProjectEnv/
+.vscode/
 
 #Environment
-.MainProjectEnv/
+MainProjEnv/
+

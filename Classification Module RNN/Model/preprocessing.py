@@ -1,201 +1,211 @@
 import os
+import random
 import numpy as np
 import librosa
+import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from collections import Counter, defaultdict
+
 import config
 
-# Global statistics tracker (computed from training data)
-GLOBAL_MEAN = None
-GLOBAL_STD = None
+
+def load_audio(path):
+    audio, sr = librosa.load(path, sr=config.SAMPLE_RATE, mono=True)
+    return audio.astype(np.float32), sr
 
 
-class AudioAugmentation:
-    """Realistic audio augmentation for underwater acoustics."""
-
-    @staticmethod
-    def apply_random(audio, sr):
-        """Apply random augmentation matching real acoustic variations."""
-        choice = np.random.choice(
-            ["noise", "shift", "pitch", "speed", "none"], p=[0.25, 0.25, 0.2, 0.2, 0.1]
-        )
-
-        if choice == "noise":
-            noise_level = np.random.uniform(0.003, 0.008)
-            return np.clip(audio + noise_level * np.random.randn(len(audio)), -1.0, 1.0)
-        elif choice == "shift":
-            shift = np.random.randint(int(len(audio) * 0.1))
-            return np.roll(audio, shift)
-        elif choice == "pitch":
-            return librosa.effects.pitch_shift(audio, sr=sr, n_steps=np.random.randint(-2, 3))
-        elif choice == "speed":
-            return librosa.effects.time_stretch(audio, rate=np.random.uniform(0.95, 1.05))
-        return audio
+def split_into_chunks(audio, chunk_len):
+    chunks = []
+    start  = 0
+    while start < len(audio):
+        chunk = audio[start : start + chunk_len]
+        if len(chunk) < chunk_len:
+            chunk = np.pad(chunk, (0, chunk_len - len(chunk)))
+        chunks.append(chunk)
+        start += chunk_len
+    return chunks
 
 
-def process_audio_to_spectrogram(audio, sr, target_sr=config.SAMPLE_RATE, duration=config.DURATION, normalize=True):
-    """Converts audio to Mel spectrogram (dB). Uses global normalization if available."""
-    target_len = int(target_sr * duration)
-    if len(audio) > target_len:
-        audio = audio[:target_len]
-    else:
-        audio = np.pad(audio, (0, target_len - len(audio)))
-
-    mel_spec = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=config.N_MELS, hop_length=config.HOP_LENGTH)
-    mel_db = librosa.power_to_db(mel_spec, ref=np.max)
-
-    if normalize:
-        global GLOBAL_MEAN, GLOBAL_STD
-        if GLOBAL_MEAN is not None and GLOBAL_STD is not None:
-            mel_db = (mel_db - GLOBAL_MEAN) / (GLOBAL_STD + 1e-9)
-        else:
-            mel_db = (mel_db - mel_db.mean()) / (mel_db.std() + 1e-9)
-
-    return mel_db
+def augment_audio(audio, sr):
+    choice = np.random.choice(["noise", "shift", "pitch", "speed", "none"],
+                               p=[0.25, 0.25, 0.2, 0.2, 0.1])
+    if choice == "noise":
+        audio = np.clip(audio + np.random.randn(len(audio)) * 0.005, -1.0, 1.0)
+    elif choice == "shift":
+        audio = np.roll(audio, np.random.randint(0, int(len(audio) * 0.1)))
+    elif choice == "pitch":
+        audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=np.random.randint(-2, 3))
+    elif choice == "speed":
+        audio = librosa.effects.time_stretch(audio, rate=np.random.uniform(0.9, 1.1))
+    return audio
 
 
-def compute_global_statistics(data_dir, categories=["ships", "marine_life"], sample_size=500):
-    """Compute mean/std from a sample of training spectrograms and store in globals."""
-    global GLOBAL_MEAN, GLOBAL_STD
-    all_specs = []
-    file_count = 0
+def audio_to_melspectrogram(audio, sr):
+    mel    = librosa.feature.melspectrogram(
+                y=audio, sr=sr,
+                n_mels=config.N_MELS,
+                hop_length=config.HOP_LENGTH)
+    mel_db = librosa.power_to_db(mel, ref=np.max)
+    mel_db = (mel_db - mel_db.mean()) / (mel_db.std() + 1e-9)
+    return mel_db[np.newaxis, :, :]  # (1, N_MELS, time_steps)
 
-    print(f"Computing global statistics from training data (up to {sample_size} files)...")
 
-    for cat in categories:
-        path = os.path.join(data_dir, cat)
-        if not os.path.exists(path):
+def load_valid_files(data_dir):
+    metadata_path = os.path.join(data_dir, config.METADATA_FILE)
+    df    = pd.read_csv(metadata_path)
+    valid = df[df['duration_second'] >= 1.0]['file_name'].tolist()
+    print(f"Metadata: {len(df)} total, {len(valid)} valid (>=1s), "
+          f"{len(df)-len(valid)} skipped (too short)")
+    return set(valid)
+
+
+def collect_files(data_dir):
+    valid_files = load_valid_files(data_dir)
+    file_paths, labels = [], []
+
+    for folder in os.listdir(data_dir):
+        folder_path = os.path.join(data_dir, folder)
+        if not os.path.isdir(folder_path):
             continue
-        for subcat in os.listdir(path):
-            sub_path = os.path.join(path, subcat)
-            if not os.path.isdir(sub_path):
+        if folder in config.SKIP_FOLDERS:
+            print(f"  Skipping folder: {folder}")
+            continue
+
+        for subclass in os.listdir(folder_path):
+            subclass_path = os.path.join(folder_path, subclass)
+            if not os.path.isdir(subclass_path):
                 continue
-            for f in os.listdir(sub_path):
-                if not f.endswith(".wav"):
+            if subclass in config.SKIP_CLASSES:
+                print(f"  Skipping class: {subclass}")
+                continue
+
+            label = f"{folder}_{subclass}"
+
+            for fname in os.listdir(subclass_path):
+                if not fname.endswith(".wav"):
                     continue
-                if file_count >= sample_size:
-                    break
-                try:
-                    audio, sr = librosa.load(os.path.join(sub_path, f), sr=config.SAMPLE_RATE)
-                    mel_spec = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=config.N_MELS, hop_length=config.HOP_LENGTH)
-                    mel_db = librosa.power_to_db(mel_spec, ref=np.max)
-                    all_specs.append(mel_db.flatten())
-                    file_count += 1
-                    if file_count % 50 == 0:
-                        print(f"  Processed {file_count} files...")
-                except Exception as e:
-                    print(f"  Error processing {f}: {e}")
+                if fname not in valid_files:
+                    continue
+                file_paths.append(os.path.join(subclass_path, fname))
+                labels.append(label)
 
-    if all_specs:
-        all_specs = np.concatenate(all_specs)
-        GLOBAL_MEAN = np.mean(all_specs)
-        GLOBAL_STD = np.std(all_specs)
-        print(f"Global statistics computed: mean={GLOBAL_MEAN:.4f}, std={GLOBAL_STD:.4f}")
-    else:
-        print("Warning: Could not compute global statistics. Falling back to per-sample normalization.")
-        GLOBAL_MEAN = None
-        GLOBAL_STD = None
-
-
-def save_global_statistics(filepath="global_stats.npz"):
-    global GLOBAL_MEAN, GLOBAL_STD
-    if GLOBAL_MEAN is not None and GLOBAL_STD is not None:
-        np.savez(filepath, mean=GLOBAL_MEAN, std=GLOBAL_STD)
-        print(f"Saved global statistics to {filepath}")
-
-
-def load_global_statistics(filepath="global_stats.npz"):
-    global GLOBAL_MEAN, GLOBAL_STD
-    try:
-        stats = np.load(filepath)
-        GLOBAL_MEAN = float(stats["mean"])
-        GLOBAL_STD = float(stats["std"])
-        print(f"Loaded global statistics: mean={GLOBAL_MEAN:.4f}, std={GLOBAL_STD:.4f}")
-        return True
-    except Exception:
-        print(f"Warning: Could not load global statistics from {filepath}. Using per-sample normalization.")
-        GLOBAL_MEAN = None
-        GLOBAL_STD = None
-        return False
+    print(f"\nFound {len(file_paths)} files across {len(set(labels))} classes.")
+    return file_paths, labels
 
 
 class UnderwaterDataset(Dataset):
-    def __init__(self, data_dir, categories=["ships", "marine_life"], training=True, encoder=None, sample_indices=None):
-        self.samples = []
-        self.training = training
-        self.encoder = encoder
+    def __init__(self, file_paths, labels, encoder, is_training=False):
+        self.encoder     = encoder
+        self.is_training = is_training
+        self.chunk_len   = config.SAMPLE_RATE * config.CHUNK_DURATION
 
-        print("Scanning dataset files...")
-        all_samples = []
-        for cat in categories:
-            path = os.path.join(data_dir, cat)
-            if not os.path.exists(path):
-                print(f"Warning: {path} does not exist")
-                continue
-            for subcat in os.listdir(path):
-                sub_path = os.path.join(path, subcat)
-                if not os.path.isdir(sub_path):
-                    continue
-                for f in os.listdir(sub_path):
-                    if f.endswith('.wav'):
-                        all_samples.append({
-                            'path': os.path.join(sub_path, f),
-                            'label': f"{cat}_{subcat}"
-                        })
+        split_name = 'train' if is_training else 'val/test'
+        print(f"  Chunking {split_name} files...")
 
-        if sample_indices is not None:
-            self.samples = [all_samples[i] for i in sample_indices]
-        else:
-            self.samples = all_samples
+        self.chunks         = []
+        self.encoded_labels = []
 
-        self.labels = [s['label'] for s in self.samples]
-        if encoder is None:
-            self.encoder = LabelEncoder()
-            self.encoded_labels = self.encoder.fit_transform(self.labels)
-        else:
-            self.encoder = encoder
-            self.encoded_labels = self.encoder.transform(self.labels)
+        for path, label in zip(file_paths, labels):
+            try:
+                audio, sr = load_audio(path)
+                chunks    = split_into_chunks(audio, self.chunk_len)
 
-        print(f"Loaded {len(self.samples)} samples (training={training})")
+                # Cap chunks per file so one long recording doesn't dominate
+                if len(chunks) > config.MAX_CHUNKS_PER_FILE:
+                    indices = np.linspace(0, len(chunks)-1,
+                                          config.MAX_CHUNKS_PER_FILE, dtype=int)
+                    chunks  = [chunks[i] for i in indices]
+
+                for chunk in chunks:
+                    self.chunks.append(chunk)
+                    self.encoded_labels.append(encoder.transform([label])[0])
+
+            except Exception as e:
+                print(f"  Error loading {path}: {e}")
+
+        self.encoded_labels = np.array(self.encoded_labels)
+
+        # Balance classes so ships don't get overwhelmed by 28 marine life classes
+        if is_training:
+            self._balance_classes()
+
+        print(f"  → {len(self.chunks)} chunks from {len(file_paths)} files")
+
+    def _balance_classes(self):
+        """Keep at most MAX_CHUNKS_PER_CLASS chunks per class."""
+        class_indices = defaultdict(list)
+        for i, lbl in enumerate(self.encoded_labels):
+            class_indices[lbl].append(i)
+
+        kept = []
+        for lbl, indices in class_indices.items():
+            if len(indices) > config.MAX_CHUNKS_PER_CLASS:
+                indices = random.sample(indices, config.MAX_CHUNKS_PER_CLASS)
+            kept.extend(indices)
+
+        self.chunks         = [self.chunks[i] for i in kept]
+        self.encoded_labels = np.array([self.encoded_labels[i] for i in kept])
 
     def __len__(self):
-        return len(self.samples)
+        return len(self.chunks)
 
     def __getitem__(self, idx):
-        path = self.samples[idx]['path']
+        audio = self.chunks[idx].copy()
         label = self.encoded_labels[idx]
 
-        try:
-            audio, sr = librosa.load(path, sr=config.SAMPLE_RATE)
-        except Exception as e:
-            print(f"Error loading {path}: {e}")
-            audio = np.zeros(int(config.SAMPLE_RATE * config.DURATION))
-            sr = config.SAMPLE_RATE
+        if self.is_training:
+            audio = augment_audio(audio, config.SAMPLE_RATE)
+            if len(audio) > self.chunk_len:
+                audio = audio[:self.chunk_len]
+            elif len(audio) < self.chunk_len:
+                audio = np.pad(audio, (0, self.chunk_len - len(audio)))
 
-        if self.training and np.random.rand() < 0.9:
-            audio = AudioAugmentation.apply_random(audio, sr)
-
-        mel_db = process_audio_to_spectrogram(audio, sr)
-        return torch.tensor(mel_db.T).float(), torch.tensor(label).long()
+        mel = audio_to_melspectrogram(audio, config.SAMPLE_RATE)
+        return torch.tensor(mel, dtype=torch.float32), torch.tensor(label, dtype=torch.long)
 
 
-def create_stratified_split(data_dir, test_size=0.2, val_size=0.2, categories=["ships", "marine_life"]):
-    """Create stratified train/val split and compute global stats from training set."""
-    full_dataset = UnderwaterDataset(data_dir, categories=categories, training=False)
-    labels = [s['label'] for s in full_dataset.samples]
-    label_indices = np.arange(len(full_dataset))
+def get_train_val_test_datasets(data_dir, val_size=0.15, test_size=0.15):
+    file_paths, labels = collect_files(data_dir)
 
-    train_indices, val_indices = train_test_split(label_indices, test_size=val_size, stratify=labels, random_state=42)
+    print("\nFile distribution:")
+    for cls, count in sorted(Counter(labels).items()):
+        print(f"  {cls:<55}: {count} files")
 
-    print(f"Stratified split: {len(train_indices)} train, {len(val_indices)} val")
+    encoder = LabelEncoder()
+    encoder.fit(labels)
 
-    train_dataset = UnderwaterDataset(data_dir, categories=categories, training=True, encoder=full_dataset.encoder, sample_indices=train_indices)
+    # Step 1: split off test set first and lock it away
+    train_val_paths, test_paths, train_val_labels, test_labels = train_test_split(
+        file_paths, labels,
+        test_size=test_size,
+        stratify=labels,
+        random_state=42
+    )
 
-    # Compute global statistics from the training partition
-    compute_global_statistics(data_dir, categories, sample_size=len(train_indices))
+    # Step 2: split remaining into train and val
+    train_paths, val_paths, train_labels, val_labels = train_test_split(
+        train_val_paths, train_val_labels,
+        test_size=val_size / (1 - test_size),
+        stratify=train_val_labels,
+        random_state=42
+    )
 
-    val_dataset = UnderwaterDataset(data_dir, categories=categories, training=False, encoder=full_dataset.encoder, sample_indices=val_indices)
+    print(f"\nFile-level split: {len(train_paths)} train | "
+          f"{len(val_paths)} val | {len(test_paths)} test")
+    print("(Test set locked — never used during training)\n")
 
-    return train_dataset, val_dataset, full_dataset.encoder.classes_
+    train_ds = UnderwaterDataset(train_paths, train_labels, encoder, is_training=True)
+    val_ds   = UnderwaterDataset(val_paths,   val_labels,   encoder, is_training=False)
+    test_ds  = UnderwaterDataset(test_paths,  test_labels,  encoder, is_training=False)
+
+    print("\nFinal chunk counts after balancing:")
+    train_counts = Counter(train_ds.encoded_labels)
+    val_counts   = Counter(val_ds.encoded_labels)
+    for i, cls in enumerate(encoder.classes_):
+        print(f"  {cls:<55}: {train_counts.get(i,0):>5} train | "
+              f"{val_counts.get(i,0):>4} val")
+
+    return train_ds, val_ds, test_ds, encoder
