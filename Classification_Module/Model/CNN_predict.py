@@ -2,9 +2,9 @@ import json
 import numpy as np
 import torch
 
-import config
-from model import SimpleCNN
-from preprocessing import load_audio, split_into_chunks, audio_to_melspectrogram
+import CNN_config as config
+from CNN_model import SimpleCNN
+from CNN_preprocessing import load_audio, split_into_chunks, audio_to_melspectrogram
 
 
 def get_time_steps():
@@ -31,7 +31,7 @@ def predict(audio_path):
 
     time_steps = get_time_steps()
     model      = SimpleCNN(num_classes=len(classes), n_mels=config.N_MELS, time_steps=time_steps)
-    model.load_state_dict(torch.load(config.MODEL_PATH, map_location=config.DEVICE))
+    model.load_state_dict(torch.load(config.CNN_MODEL_PATH, map_location=config.DEVICE))
     model.to(config.DEVICE)
     model.eval()
 
@@ -54,16 +54,19 @@ def predict(audio_path):
     # Average probabilities across all chunks (soft voting)
     avg_probs     = np.mean(all_probs, axis=0)
     predicted_idx = np.argmax(avg_probs)
-
-    predicted_class = classes[predicted_idx]
     confidence      = avg_probs[predicted_idx] * 100
+
+    if confidence < config.CONFIDENCE_THRESHOLD:
+        predicted_class = "Unknown"
+    else:
+        predicted_class = classes[predicted_idx]
 
     print(f"\nPrediction : {predicted_class}")
     print(f"Confidence : {confidence:.1f}%")
     print(f"\nAll class probabilities:")
     for cls, prob in sorted(zip(classes, avg_probs), key=lambda x: -x[1]):
         bar = "█" * int(prob * 40)
-        print(f"  {cls:<45}: {prob*100:>5.1f}%  {bar}")
+        print(f"  {cls:<55}: {prob*100:>5.1f}%  {bar}")
 
 
 # Ask user for audio path

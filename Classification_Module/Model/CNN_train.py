@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-import config
-from model import SimpleCNN
-from preprocessing import get_train_val_test_datasets
+import CNN_config as config
+from CNN_model import SimpleCNN
+from CNN_preprocessing import get_train_val_test_datasets
 
 
 def get_time_steps():
@@ -78,7 +78,7 @@ def train():
         if val_acc > best_val_acc:
             best_val_acc               = val_acc
             epochs_without_improvement = 0
-            torch.save(model.state_dict(), config.MODEL_PATH)
+            torch.save(model.state_dict(), config.CNN_MODEL_PATH)
             print(f"  --> Saved best model (Val Acc: {val_acc:.1f}%)")
         else:
             epochs_without_improvement += 1

@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from collections import Counter, defaultdict
 
-import config
+import CNN_config as config
 
 
 def load_audio(path):

@@ -4,9 +4,9 @@ import json
 import torch
 from torch.utils.data import DataLoader
 from sklearn.metrics import classification_report
-import config
-from model import SimpleCNN
-from preprocessing import get_train_val_test_datasets
+import CNN_config as config
+from CNN_model import SimpleCNN
+from CNN_preprocessing import get_train_val_test_datasets
 
 def get_time_steps():
     return (config.SAMPLE_RATE * config.CHUNK_DURATION) // config.HOP_LENGTH + 1
@@ -18,7 +18,7 @@ time_steps = get_time_steps()
 
 # Load the best saved model
 model = SimpleCNN(num_classes=len(classes), n_mels=config.N_MELS, time_steps=time_steps)
-model.load_state_dict(torch.load(config.MODEL_PATH, map_location=config.DEVICE))
+model.load_state_dict(torch.load(config.CNN_MODEL_PATH, map_location=config.DEVICE))
 model.to(config.DEVICE)
 model.eval()
 

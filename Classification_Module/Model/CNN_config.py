@@ -2,12 +2,12 @@ import torch
 
 # --- Paths ---
 DATA_DIR     = r'D:\MAIN PROJECT\UnderWater-Acoustic-Detection\Dataset\DDDDD'
-METADATA_FILE = "audio_metadata1.csv"
-MODEL_PATH   = "best_model.pth"
-CLASSES_PATH = "classes.json"
+METADATA_FILE = r'D:\MAIN PROJECT\UnderWater-Acoustic-Detection\Dataset\DDDDD\audio_metadata1.csv'
+CNN_MODEL_PATH   = r'D:\MAIN PROJECT\UnderWater-Acoustic-Detection\Classification_Module\Model\CNN_best_model.pth'
+CLASSES_PATH = r'D:\MAIN PROJECT\UnderWater-Acoustic-Detection\Classification_Module\Model\classes.json'
 
 # --- Audio Settings ---
-SAMPLE_RATE    = 32000
+SAMPLE_RATE    = 16000
 CHUNK_DURATION = 3
 N_MELS         = 64
 HOP_LENGTH     = 512
@@ -19,6 +19,7 @@ PATIENCE      = 10
 LEARNING_RATE = 0.001
 MAX_CHUNKS_PER_FILE = 10
 MAX_CHUNKS_PER_CLASS = 100  # every class gets at most 100 chunks
+CONFIDENCE_THRESHOLD = 70
 
 # --- Skip these — too few files to learn from ---
 SKIP_CLASSES = [
