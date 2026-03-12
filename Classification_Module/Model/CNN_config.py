@@ -19,7 +19,7 @@ PATIENCE      = 10
 LEARNING_RATE = 0.001
 MAX_CHUNKS_PER_FILE = 10
 MAX_CHUNKS_PER_CLASS = 100  # every class gets at most 100 chunks
-CONFIDENCE_THRESHOLD = 70
+CONFIDENCE_THRESHOLD = 60
 
 # --- Skip these — too few files to learn from ---
 SKIP_CLASSES = [

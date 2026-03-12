@@ -1,257 +1,385 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>UnderwaterAI — CNN Acoustic Surveillance</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <title>UnderwaterAI — Acoustic Surveillance System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="home.css"/>
 </head>
 <body>
 
-  <nav class="navbar">
-    <div class="nav-inner">
-      <div class="nav-logo">
-        <div class="logo-icon"><i class="fas fa-water"></i></div>
-        <span>UnderwaterAI</span>
-      </div>
-      <ul class="nav-links">
-        <li><a href="#overview">Overview</a></li>
-        <li><a href="#pipeline">Pipeline</a></li>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#objectives">Objectives</a></li>
-        <li><a href="#applications">Applications</a></li>
-      </ul>
-      <a href="Project_page.html" class="nav-cta">Explore Project</a>
-    </div>
+<!-- Particle canvas -->
+<canvas id="ocean-canvas"></canvas>
+
+<div class="content">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="home.html" class="nav-brand">
+      <div class="nav-brand-icon"><i class="fas fa-water"></i></div>
+      <span class="nav-brand-name">UnderwaterAI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#pipeline">Pipeline</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#applications">Applications</a></li>
+    </ul>
+    <a href="project.html" class="nav-cta"><i class="fas fa-satellite-dish"></i> &nbsp;Live Analysis</a>
   </nav>
 
+  <!-- HERO -->
   <section class="hero" id="overview">
-    <div class="hero-bg">
-      <div class="bubble b1"></div><div class="bubble b2"></div>
-      <div class="bubble b3"></div><div class="bubble b4"></div>
-      <div class="sonar-ring r1"></div><div class="sonar-ring r2"></div><div class="sonar-ring r3"></div>
-    </div>
-    <div class="hero-content">
-      <div class="hero-badge"><i class="fas fa-microchip"></i> CNN-Based Deep Learning</div>
-      <h1>Underwater Acoustic<br/><span class="gradient-text">Surveillance System</span></h1>
-      <p class="hero-sub">Detecting and classifying objects from <strong>.wav acoustic signals</strong> using Convolutional Neural Networks — cutting through ambient noise to identify anomalies, extract features, and classify targets.</p>
+    <div class="hero-text">
+      <div class="hero-eyebrow"><i class="fas fa-microchip"></i>&nbsp; Deep Learning · Acoustic Intelligence</div>
+      <h1>
+        Detect What<br/>
+        Hides <em>Underwater</em>
+      </h1>
+      <p class="hero-sub">
+        An AI-driven pipeline that processes <strong>.wav</strong> acoustic signals —
+        detecting anomalies against ocean ambience, extracting timestamps,
+        and classifying underwater objects with a CNN classifier.
+      </p>
       <div class="hero-actions">
-        <a href="#pipeline" class="btn-primary"><i class="fas fa-play"></i> See How It Works</a>
-        <a href="#features" class="btn-outline"><i class="fas fa-book-open"></i> Read Abstract</a>
+        <a href="project.html" class="btn-primary"><i class="fas fa-play"></i> Run Live Analysis</a>
+        <a href="#pipeline" class="btn-ghost"><i class="fas fa-sitemap"></i> See Architecture</a>
       </div>
       <div class="hero-stats">
-        <div class="stat"><span class="stat-num">4</span><span class="stat-label">Core Modules</span></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><span class="stat-num">CNN</span><span class="stat-label">Architecture</span></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><span class="stat-num">.WAV</span><span class="stat-label">Input Format</span></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><span class="stat-num">AI</span><span class="stat-label">Driven</span></div>
+        <div class="hero-stat">
+          <span class="hero-stat-val">4</span>
+          <span class="hero-stat-label">Pipeline Stages</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-val">CNN</span>
+          <span class="hero-stat-label">Classifier</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-val">.WAV</span>
+          <span class="hero-stat-label">Input Format</span>
+        </div>
       </div>
     </div>
+
     <div class="hero-visual">
-      <div class="waveform-container">
-        <div class="waveform-label">Live Acoustic Signal</div>
-        <div class="waveform">
-          <svg viewBox="0 0 600 120" preserveAspectRatio="none">
-            <rect class="anomaly-region" x="95" y="0" width="60" height="120" rx="2"/>
-            <rect class="anomaly-region" x="235" y="0" width="65" height="120" rx="2"/>
-            <rect class="anomaly-region" x="375" y="0" width="65" height="120" rx="2"/>
-            <polyline class="wave-line" points="0,60 10,58 20,62 30,50 40,40 50,55 60,60 70,62 80,59 90,61 100,30 110,15 120,5 130,20 140,50 150,60 160,62 170,58 180,60 190,61 200,59 210,62 220,58 230,60 240,25 250,10 260,8 270,22 280,45 290,60 300,62 310,59 320,61 330,60 340,58 350,62 360,60 370,59 380,28 390,12 400,7 410,18 420,48 430,60 440,62 450,60 460,59 470,61 480,60 490,62 500,58 510,60 520,62 530,59 540,60 550,62 560,58 570,61 580,60 590,62 600,60"/>
-          </svg>
-        </div>
-        <div class="waveform-legend">
-          <span class="legend-dot ambient"></span> Ambient Noise &nbsp;
-          <span class="legend-dot anomaly"></span> Detected Anomaly
+      <div class="sonar-wrap">
+        <div class="sonar-screen">
+          <div class="sonar-ring r1"></div>
+          <div class="sonar-ring r2"></div>
+          <div class="sonar-ring r3"></div>
+          <div class="sonar-cross"></div>
+          <div class="sonar-sweep"></div>
+          <div class="sonar-blip b1"></div>
+          <div class="sonar-blip b2"></div>
+          <div class="sonar-blip b3"></div>
         </div>
       </div>
-      <div class="detection-cards">
-        <div class="det-card">
-          <div class="det-icon green"><i class="fas fa-check-circle"></i></div>
-          <div class="det-info"><span class="det-label">Object Detected</span><span class="det-value">Submarine — Class A</span></div>
+      <div class="detection-strip">
+        <div class="det-item">
+          <div class="det-dot green"></div>
+          <div>
+            <div class="det-label">Detected Object</div>
+            <div class="det-value">Anthropogenic · Ships</div>
+          </div>
         </div>
-        <div class="det-card">
-          <div class="det-icon yellow"><i class="fas fa-clock"></i></div>
-          <div class="det-info"><span class="det-label">Duration</span><span class="det-value">3.42s — 7.81s</span></div>
+        <div class="det-item">
+          <div class="det-dot cyan"></div>
+          <div>
+            <div class="det-label">Confidence Score</div>
+            <div class="det-value">94.7%</div>
+          </div>
         </div>
-        <div class="det-card">
-          <div class="det-icon blue"><i class="fas fa-chart-bar"></i></div>
-          <div class="det-info"><span class="det-label">Confidence</span><span class="det-value">94.7%</span></div>
+        <div class="det-item">
+          <div class="det-dot blue"></div>
+          <div>
+            <div class="det-label">Anomaly Window</div>
+            <div class="det-value">3.24s → 7.81s</div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="abstract-band">
+  <!-- ABSTRACT -->
+  <div class="abstract-band">
     <div class="container">
       <div class="abstract-inner">
-        <div class="abstract-tag"><i class="fas fa-file-alt"></i> Project Abstract</div>
-        <p>Detection and classification of underwater objects from acoustic data presents a significant challenge due to the complex nature of the underwater environment. This project proposes an <strong>AI-driven solution</strong> for robust detection and classification of objects within underwater acoustic data — developing an anomaly detection module against ambient noise, precisely extracting temporal durations, computing salient acoustic features, and implementing a classification system for predefined object classes. This approach enhances accuracy and efficiency for applications in marine conservation, underwater exploration, and naval security.</p>
+        <div class="abstract-tag">Abstract</div>
+        <p class="abstract-text">
+          Detection and classification of underwater objects from acoustic data presents a significant challenge due to the
+          complex nature of the underwater environment. This project proposes an <strong>AI-driven solution</strong>
+          for robust detection and classification — developing an anomaly detection module against ambient noise,
+          extracting temporal durations, computing salient acoustic features, and implementing a
+          <strong>multi-class CNN classifier</strong> for predefined object categories. Advancing the frontiers of
+          marine conservation, underwater exploration, and naval security.
+        </p>
       </div>
     </div>
-  </section>
+  </div>
 
+  <!-- PIPELINE -->
   <section class="pipeline-section" id="pipeline">
     <div class="container">
-      <div class="section-header">
-        <div class="section-tag">System Architecture</div>
-        <h2>Processing Pipeline</h2>
-        <p>Four-stage intelligent pipeline transforming raw acoustic data into classified detections</p>
+      <div class="pipeline-header">
+        <div class="section-eyebrow">System Architecture</div>
+        <h2 class="section-title">Four-Stage Processing Pipeline</h2>
+        <p class="section-sub">From raw acoustic signal to classified detection — every stage purpose-built for underwater acoustics.</p>
       </div>
-      <div class="pipeline-steps">
-        <div class="pipeline-step">
-          <div class="step-number">01</div>
-          <div class="step-icon"><i class="fas fa-wave-square"></i></div>
+      <div class="pipeline-track">
+        <div class="pipe-step">
+          <div class="pipe-num-wrap">
+            <div class="pipe-num"><i class="fas fa-wave-square"></i></div>
+          </div>
           <h3>Signal Ingestion</h3>
-          <p>Raw <code>.wav</code> files are ingested and pre-processed — resampled, normalized, and segmented for analysis.</p>
-          <div class="step-tags"><span>WAV Input</span><span>Preprocessing</span></div>
+          <p>Raw <code>.wav</code> files are loaded, resampled to target rate, normalized, and segmented into overlapping windows for analysis.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">WAV Input</span>
+            <span class="pipe-tag">Resampling</span>
+            <span class="pipe-tag">Normalization</span>
+          </div>
         </div>
-        <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
-        <div class="pipeline-step">
-          <div class="step-number">02</div>
-          <div class="step-icon"><i class="fas fa-search"></i></div>
+        <div class="pipe-step">
+          <div class="pipe-num-wrap">
+            <div class="pipe-num"><i class="fas fa-search"></i></div>
+          </div>
           <h3>Anomaly Detection</h3>
-          <p>CNN-based detector identifies departures from the ambient noise baseline, flagging object presence events.</p>
-          <div class="step-tags"><span>CNN</span><span>Thresholding</span></div>
+          <p>An autoencoder trained on ambient ocean noise flags segments with high reconstruction error — any departure from background is an anomaly.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">Autoencoder</span>
+            <span class="pipe-tag">Log-Mel Features</span>
+            <span class="pipe-tag">IQR Threshold</span>
+          </div>
         </div>
-        <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
-        <div class="pipeline-step">
-          <div class="step-number">03</div>
-          <div class="step-icon"><i class="fas fa-ruler-horizontal"></i></div>
+        <div class="pipe-step">
+          <div class="pipe-num-wrap">
+            <div class="pipe-num"><i class="fas fa-ruler-horizontal"></i></div>
+          </div>
           <h3>Duration Extraction</h3>
-          <p>Precise temporal boundaries of each anomaly are computed, yielding onset and offset timestamps of object presence.</p>
-          <div class="step-tags"><span>Temporal</span><span>Segmentation</span></div>
+          <p>Anomalous regions are merged and precisely timestamped. Overlapping windows are deduplicated to yield clean onset/offset boundaries.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">Timestamps</span>
+            <span class="pipe-tag">Deduplication</span>
+            <span class="pipe-tag">Segmentation</span>
+          </div>
         </div>
-        <div class="pipeline-arrow"><i class="fas fa-chevron-right"></i></div>
-        <div class="pipeline-step">
-          <div class="step-number">04</div>
-          <div class="step-icon"><i class="fas fa-tags"></i></div>
-          <h3>Classification</h3>
-          <p>Extracted acoustic features feed a multi-class CNN classifier, categorizing detected objects into predefined target classes.</p>
-          <div class="step-tags"><span>Multi-Class</span><span>Deep Learning</span></div>
+        <div class="pipe-step">
+          <div class="pipe-num-wrap">
+            <div class="pipe-num"><i class="fas fa-tags"></i></div>
+          </div>
+          <h3>CNN Classification</h3>
+          <p>Anomalous audio is converted to a mel spectrogram and fed into a SimpleCNN, producing class probabilities across all target categories.</p>
+          <div class="pipe-tags">
+            <span class="pipe-tag">Mel Spectrogram</span>
+            <span class="pipe-tag">SimpleCNN</span>
+            <span class="pipe-tag">Multi-Class</span>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- FEATURES -->
   <section class="features-section" id="features">
     <div class="container">
-      <div class="section-header light">
-        <div class="section-tag">Capabilities</div>
-        <h2>Core Features</h2>
-        <p>End-to-end acoustic intelligence powered by deep learning</p>
-      </div>
-      <div class="features-grid">
-        <div class="feature-card large">
-          <div class="feature-icon"><i class="fas fa-brain"></i></div>
-          <h3>CNN Deep Learning</h3>
-          <p>Convolutional Neural Networks extract hierarchical spatial-temporal features from spectrograms and raw acoustic signals, enabling robust pattern recognition even in high-noise environments.</p>
-          <ul class="feature-list">
-            <li><i class="fas fa-check"></i> Spectrogram-based feature learning</li>
-            <li><i class="fas fa-check"></i> Noise-robust signal processing</li>
-            <li><i class="fas fa-check"></i> Transfer learning support</li>
-          </ul>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon"><i class="fas fa-bell"></i></div>
-          <h3>Anomaly Detection</h3>
-          <p>Statistical and learned models identify anomalous acoustic signatures against dynamic ambient noise baselines.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon"><i class="fas fa-fingerprint"></i></div>
-          <h3>Feature Extraction</h3>
-          <p>Log-mel spectrogram, spectral centroid, zero-crossing rate, and CNN-learned embeddings capture distinct object signatures.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon"><i class="fas fa-layer-group"></i></div>
-          <h3>Multi-Class Output</h3>
-          <p>Objects classified into distinct categories — submarines, vessels, marine life, and other acoustic targets.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon"><i class="fas fa-stopwatch"></i></div>
-          <h3>Temporal Analysis</h3>
-          <p>Millisecond-accurate extraction of anomaly onset and duration provides precise event timelines.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="objectives-section" id="objectives">
-    <div class="container">
-      <div class="objectives-inner">
-        <div class="objectives-text">
-          <div class="section-tag">Problem Statement</div>
-          <h2>What We're Solving</h2>
-          <p>The underwater acoustic environment is characterized by complex, dynamic ambient noise — making reliable object detection exceptionally difficult with conventional signal processing alone.</p>
-          <div class="objectives-list">
-            <div class="obj-item"><div class="obj-num">1</div><div><strong>Anomaly Detection</strong><p>Detect object presence against ambient underwater noise in .wav audio files</p></div></div>
-            <div class="obj-item"><div class="obj-num">2</div><div><strong>Duration Extraction</strong><p>Extract precise start and end timestamps of each detected anomaly</p></div></div>
-            <div class="obj-item"><div class="obj-num">3</div><div><strong>Feature Computation</strong><p>Compute salient acoustic features characterizing each detected object</p></div></div>
-            <div class="obj-item"><div class="obj-num">4</div><div><strong>Object Classification</strong><p>Categorize detected objects into predefined target classes with high accuracy</p></div></div>
-          </div>
-        </div>
-        <div class="objectives-visual">
-          <div class="radar-container">
-            <div class="radar-screen">
-              <div class="radar-circle c1"></div>
-              <div class="radar-circle c2"></div>
-              <div class="radar-circle c3"></div>
-              <div class="radar-sweep"></div>
-              <div class="radar-dot d1"></div>
-              <div class="radar-dot d2"></div>
-              <div class="radar-dot d3"></div>
-              <div class="radar-crosshair h"></div>
-              <div class="radar-crosshair v"></div>
+      <div class="features-layout">
+        <div>
+          <div class="section-eyebrow">Capabilities</div>
+          <h2 class="section-title">Built for the<br/>Ocean Floor</h2>
+          <p class="section-sub">Every component designed to handle the unique challenges of underwater acoustic environments.</p>
+          <div class="features-list">
+            <div class="feat-item">
+              <div class="feat-icon"><i class="fas fa-brain"></i></div>
+              <div>
+                <h4>Ambient-Aware Anomaly Detection</h4>
+                <p>Autoencoder trained exclusively on the quietest 10% of ocean recordings — any sound with activity registers as anomalous.</p>
+              </div>
             </div>
-            <div class="radar-label">Acoustic Surveillance Active</div>
+            <div class="feat-item">
+              <div class="feat-icon"><i class="fas fa-fingerprint"></i></div>
+              <div>
+                <h4>Log-Mel Acoustic Features</h4>
+                <p>64-band mel spectrograms capture the frequency-time structure that distinguishes ships, marine life, and natural sounds.</p>
+              </div>
+            </div>
+            <div class="feat-item">
+              <div class="feat-icon"><i class="fas fa-shield-alt"></i></div>
+              <div>
+                <h4>Confidence Thresholding</h4>
+                <p>Predictions below 60% confidence are automatically flagged as "Unknown" — never reporting a false certainty.</p>
+              </div>
+            </div>
+            <div class="feat-item">
+              <div class="feat-icon"><i class="fas fa-layer-group"></i></div>
+              <div>
+                <h4>LangChain Pipeline</h4>
+                <p>Autoencoder and CNN are chained via LangChain's RunnableLambda — clean, modular, and easy to extend.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="features-visual">
+          <div class="spec-card">
+            <div class="spec-card-title"><i class="fas fa-chart-bar"></i> Sample Classification Output</div>
+            <div class="spec-bars">
+              <div class="spec-row">
+                <div class="spec-meta"><span class="spec-name">Anthropogenic · Ships</span><span class="spec-val">87.4%</span></div>
+                <div class="spec-track"><div class="spec-fill" style="width:87.4%"></div></div>
+              </div>
+              <div class="spec-row">
+                <div class="spec-meta"><span class="spec-name">Marine Life · Dolphin</span><span class="spec-val">6.2%</span></div>
+                <div class="spec-track"><div class="spec-fill" style="width:6.2%"></div></div>
+              </div>
+              <div class="spec-row">
+                <div class="spec-meta"><span class="spec-name">Marine Life · Whale</span><span class="spec-val">3.8%</span></div>
+                <div class="spec-track"><div class="spec-fill" style="width:3.8%"></div></div>
+              </div>
+              <div class="spec-row">
+                <div class="spec-meta"><span class="spec-name">Unknown / Other</span><span class="spec-val">2.6%</span></div>
+                <div class="spec-track"><div class="spec-fill" style="width:2.6%"></div></div>
+              </div>
+            </div>
+            <div style="margin-top:1.8rem; padding-top:1.4rem; border-top:1px solid var(--border);">
+              <div class="spec-card-title" style="margin-bottom:1rem"><i class="fas fa-microchip"></i> Model Configuration</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
+                <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);border-radius:8px;padding:0.7rem">
+                  <div style="font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Input SR</div>
+                  <div style="font-family:'JetBrains Mono',monospace;color:var(--teal);font-size:0.9rem">32 000 Hz</div>
+                </div>
+                <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);border-radius:8px;padding:0.7rem">
+                  <div style="font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Mel Bands</div>
+                  <div style="font-family:'JetBrains Mono',monospace;color:var(--teal);font-size:0.9rem">64</div>
+                </div>
+                <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);border-radius:8px;padding:0.7rem">
+                  <div style="font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Chunk</div>
+                  <div style="font-family:'JetBrains Mono',monospace;color:var(--teal);font-size:0.9rem">3 seconds</div>
+                </div>
+                <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);border-radius:8px;padding:0.7rem">
+                  <div style="font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Threshold</div>
+                  <div style="font-family:'JetBrains Mono',monospace;color:var(--teal);font-size:0.9rem">60%</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- APPLICATIONS -->
   <section class="applications-section" id="applications">
     <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Use Cases</div>
-        <h2>Applications</h2>
-        <p>Valuable insights across a wide range of underwater monitoring needs</p>
-      </div>
+      <div class="section-eyebrow">Use Cases</div>
+      <h2 class="section-title">Where It Matters</h2>
       <div class="app-grid">
-        <div class="app-card"><div class="app-icon"><i class="fas fa-anchor"></i></div><h3>Naval Security</h3><p>Detection and tracking of underwater threats, submarines, and unauthorized vessels for defense applications.</p></div>
-        <div class="app-card"><div class="app-icon"><i class="fas fa-fish"></i></div><h3>Marine Conservation</h3><p>Passive acoustic monitoring of marine mammals and biodiversity assessment without physical intrusion.</p></div>
-        <!--<div class="app-card"><div class="app-icon"><i class="fas fa-compass"></i></div><h3>Underwater Exploration</h3><p>Supporting AUV and ROV missions by providing acoustic awareness of the surrounding environment.</p></div>
-        <div class="app-card"><div class="app-icon"><i class="fas fa-industry"></i></div><h3>Infrastructure Monitoring</h3><p>Monitoring underwater pipelines, cables, and structures for acoustic anomalies indicating damage or intrusion.</p></div>-->
-      </div>
-    </div>
-  </section>
-
-  <section class="cta-section" id="get-started">
-    <div class="container">
-      <div class="cta-inner">
-        <h2>CNN-Powered Underwater Intelligence</h2>
-        <p>From raw acoustic data to classified detections — advancing the frontier of underwater surveillance with AI.</p>
-        <div class="cta-badges">
-          <span><i class="fas fa-check-circle"></i> Deep Learning</span>
-          <span><i class="fas fa-check-circle"></i> Real-Time Analysis</span>
-          <span><i class="fas fa-check-circle"></i> Multi-Class Detection</span>
-          <span><i class="fas fa-check-circle"></i> .WAV Compatible</span>
+        <div class="app-card">
+          <div class="app-icon"><i class="fas fa-anchor"></i></div>
+          <h3>Naval Security</h3>
+          <p>Detection and tracking of underwater threats, submarines, and unauthorized vessels in real time for defense and border monitoring.</p>
+        </div>
+        <div class="app-card">
+          <div class="app-icon"><i class="fas fa-fish"></i></div>
+          <h3>Marine Conservation</h3>
+          <p>Passive acoustic monitoring of marine mammals and ecosystem health — non-intrusive, continuous, and species-aware.</p>
+        </div>
+        <div class="app-card">
+          <div class="app-icon"><i class="fas fa-compass"></i></div>
+          <h3>Underwater Exploration</h3>
+          <p>Providing acoustic awareness for AUV and ROV missions — identifying objects and hazards before visual range.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <footer class="footer">
+  <!-- CTA -->
+  <section class="cta-section">
     <div class="container">
-      <div class="footer-inner">
-        <div class="footer-brand"><div class="logo-icon small"><i class="fas fa-water"></i></div><span>UnderwaterAI</span></div>
-        <p class="footer-desc">CNN-Based Analysis of Underwater Acoustic Data for Surveillance</p>
-        <p class="footer-copy">&copy; 2026 Underwater Acoustic Surveillance Project. All rights reserved.</p>
+      <h2>Ready to Analyse<br/>Your Recordings?</h2>
+      <p>Upload a <code>.wav</code> file and get anomaly timestamps, acoustic features, and a full CNN classification — in seconds.</p>
+      <a href="project.html" class="btn-primary" style="display:inline-flex;font-size:1rem;padding:1rem 2.5rem">
+        <i class="fas fa-satellite-dish"></i>&nbsp; Launch Live Analysis
+      </a>
+      <div class="cta-badges">
+        <span class="cta-badge"><i class="fas fa-check-circle"></i> No Setup Required</span>
+        <span class="cta-badge"><i class="fas fa-check-circle"></i> Real-Time Results</span>
+        <span class="cta-badge"><i class="fas fa-check-circle"></i> Multi-Class Detection</span>
+        <span class="cta-badge"><i class="fas fa-check-circle"></i> .WAV Compatible</span>
       </div>
     </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">
+      <div class="nav-brand-icon" style="width:28px;height:28px;font-size:0.75rem"><i class="fas fa-water"></i></div>
+      UnderwaterAI
+    </div>
+    <p>&copy; 2026 Underwater Acoustic Surveillance Project</p>
   </footer>
+
+</div><!-- /content -->
+
+<script>
+  // ---- Bioluminescent particle canvas ----
+  const canvas = document.getElementById('ocean-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function spawnParticles(n) {
+    for (let i = 0; i < n; i++) {
+      particles.push({
+        x:    Math.random() * W,
+        y:    Math.random() * H,
+        r:    Math.random() * 1.8 + 0.4,
+        vx:   (Math.random() - 0.5) * 0.25,
+        vy:   -(Math.random() * 0.4 + 0.1),
+        life: Math.random(),
+        maxLife: Math.random() * 0.6 + 0.4,
+        hue:  Math.random() > 0.5 ? 180 : 150,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach((p, i) => {
+      p.life += 0.003;
+      if (p.life > p.maxLife) p.life = 0;
+
+      const alpha = Math.sin((p.life / p.maxLife) * Math.PI) * 0.7;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${alpha})`;
+      ctx.fill();
+
+      // Soft glow
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+      grad.addColorStop(0, `hsla(${p.hue}, 100%, 70%, ${alpha * 0.3})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+    });
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  spawnParticles(120);
+  draw();
+  window.addEventListener('resize', () => { resize(); });
+</script>
 
 </body>
 </html>
