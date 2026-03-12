@@ -1,5 +1,5 @@
-# NOTE: The Project is under development
-
+# NOTE: WORK IN PROGRESS
+>>"I thought this wouldn't change." "She's made of code sir, she can and she will."
 
 Convolutional Neural Network–Based Analysis of Underwater Acoustic Data for Underwater Surveillance
 
