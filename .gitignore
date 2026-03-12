@@ -3,18 +3,28 @@ Dataset/
 *.wav
 
 
-
-#.npz file
-*.npz
+# Models
+*.pth
 
 # Python cache
 __pycache__/
 *.pyc
+# model output
+*.pkl
+
 
 __init__.py
 
 #testfiles
 testfiles/
+
+# Supporting files and folders
+Screenshots/
+scraper.py
+
+# Environment
+.MainProjectEnv/
+.vscode/
 
 #Supporting files and folders
 Screenshots/

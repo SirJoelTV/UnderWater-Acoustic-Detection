@@ -1,4 +1,7 @@
-Recurrent Neural Network–Based Analysis of Underwater Acoustic Data for Underwater Surveillance
+# NOTE: The Project is under development
+
+
+Convolutional Neural Network–Based Analysis of Underwater Acoustic Data for Underwater Surveillance
 
 PROBLEM STATEMENT:
 To detect anomalies (in the background of ambient noise) in an audio file (.wav format), extract the duration of anomalies (presence of objects), extract features of the object and classify the object into different classes.
