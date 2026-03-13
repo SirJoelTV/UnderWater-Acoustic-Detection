@@ -1,5 +1,5 @@
 # NOTE: WORK IN PROGRESS
->>"I thought this wouldn't change." "She's made of code sir, she can and she will."
+>>"But this project can't change." "She's made of code, sir. I assure you, she can. And she will."
 
 Convolutional Neural Network–Based Analysis of Underwater Acoustic Data for Underwater Surveillance
 
