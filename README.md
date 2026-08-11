@@ -1,7 +1,7 @@
 # NOTE: WORK IN PROGRESS
 >>"But this project can't change." "She's made of code, sir. I assure you, she can. And she will."
 
-Convolutional Neural Network–Based Analysis of Underwater Acoustic Data for Underwater Surveillance
+Neural Network–Based Analysis of Underwater Acoustic Data for Underwater Surveillance
 
 PROBLEM STATEMENT:
 To detect anomalies (in the background of ambient noise) in an audio file (.wav format), extract the duration of anomalies (presence of objects), extract features of the object and classify the object into different classes.
